@@ -1,0 +1,197 @@
+local library = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew",
+    true
+))()
+
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+local npcFolder = workspace:WaitForChild("NPCs")
+
+local Window = library:CreateWindow("The Hunt 20")
+local Folder = Window:AddFolder("Natural Disasters")
+
+local highlightsEnabled = false
+local highlights = {}
+local notificationCooldown = false
+
+local function notify(text)
+    if notificationCooldown then return end
+
+    notificationCooldown = true
+
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "The Hunt 20",
+            Text = text,
+            Duration = 10
+        })
+    end)
+
+    task.delay(10, function()
+        notificationCooldown = false
+    end)
+end
+
+local function getNPCs()
+    local names = {}
+
+    for _, npc in ipairs(npcFolder:GetChildren()) do
+        if npc:IsA("Model") then
+            table.insert(names, npc.Name)
+        end
+    end
+
+    table.sort(names)
+    return names
+end
+
+local function highlightNPC(npc)
+    if not npc:IsA("Model") or highlights[npc] then
+        return
+    end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "NPCHighlight"
+    highlight.Adornee = npc
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = npc
+
+    highlights[npc] = highlight
+end
+
+local function enableHighlights()
+    for _, npc in ipairs(npcFolder:GetChildren()) do
+        highlightNPC(npc)
+    end
+end
+
+local function removeHighlights()
+    for npc, highlight in pairs(highlights) do
+        if highlight then
+            highlight:Destroy()
+        end
+
+        highlights[npc] = nil
+    end
+end
+
+npcFolder.ChildAdded:Connect(function(npc)
+    if highlightsEnabled then
+        task.wait(0.2)
+        highlightNPC(npc)
+    end
+end)
+
+npcFolder.ChildRemoved:Connect(function(npc)
+    highlights[npc] = nil
+end)
+
+Folder:AddToggle({
+    text = "NPC Highlights",
+    flag = "npcHighlights",
+    state = false,
+
+    callback = function(value)
+        highlightsEnabled = value
+
+        if value then
+            enableHighlights()
+        else
+            removeHighlights()
+        end
+    end
+})
+
+Folder:AddList({
+    text = "Select NPC",
+    values = getNPCs(),
+    open = false,
+    flag = "npc",
+
+    callback = function(name)
+        local npc = npcFolder:FindFirstChild(name)
+
+        if not npc then
+            return
+        end
+
+        local character = player.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+
+        if not root then
+            return
+        end
+
+        local target = npc:FindFirstChild("HumanoidRootPart")
+            or npc.PrimaryPart
+            or npc:FindFirstChildWhichIsA("BasePart", true)
+
+        if target then
+            root.CFrame = target.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+})
+
+Folder:AddButton({
+    text = "Put Animals",
+    flag = "positionTeleport1",
+
+    callback = function()
+        notify("The animals teleporter only works after the round has started.")
+
+        local character = player.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+
+        if root then
+            root.CFrame = CFrame.new(-311, 195, 309)
+        end
+    end
+})
+
+Folder:AddButton({
+    text = "Safe Place (Lobby)",
+    flag = "positionTeleport2",
+
+    callback = function()
+        local character = player.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+
+        if root then
+            root.CFrame = CFrame.new(-242, 180, 342)
+        end
+    end
+})
+
+Folder:AddLabel({
+    text = "Created By: ClarenceXploits",
+    type = "label"
+})
+
+Folder:AddButton({
+    text = "Anti-Fling",
+    flag = "antiFling",
+
+    callback = function()
+        loadstring(game:HttpGet(
+            "https://rawscripts.net/raw/Universal-Script-Improved-anti-fling-works-for-any-game-228282"
+        ))()
+    end
+})
+
+library:Init()
+
+task.wait(1)
+
+loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/vnyxcc/Natural-disasters/refs/heads/main/Disaster%20notify%20.txt"
+))()
+
+notify("Created by: ClarenceXploits")
+
+task.wait(10)
+
+notify("If a round has started earlier, you cannot pick up the animals yet.")
